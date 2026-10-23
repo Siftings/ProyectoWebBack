@@ -86,4 +86,16 @@ class InvitacionUsuarioControllerTest {
                     """))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void crear_sin_email_retorna_400() throws Exception {
+        mockMvc.perform(post("/api/v1/usuarios/invitaciones")
+                .with(principal(RolAcceso.ADMINISTRADOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"rolAcceso":"EDITOR"}
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("email: El correo es obligatorio."));
+    }
 }

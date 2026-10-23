@@ -87,4 +87,23 @@ class EmpresaControllerTest {
                                 """))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("POST /api/v1/empresas - contrasena de 7 caracteres falla (400)")
+    void registrar_contrasena_corta_falla() throws Exception {
+        mockMvc.perform(post("/api/v1/empresas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nombreEmpresa": "Acme",
+                                  "nit": "900123",
+                                  "correoContacto": "info@acme.com",
+                                  "nombreAdmin": "Admin",
+                                  "emailAdmin": "admin@acme.com",
+                                  "passwordAdmin": "1234567"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("passwordAdmin: La contrasena debe tener al menos 8 caracteres."));
+    }
 }
