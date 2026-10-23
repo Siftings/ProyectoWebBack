@@ -7,12 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 public record ActividadRequest(
         @NotBlank(message = "El nombre es obligatorio.") String nombre,
         String descripcion,
-        int posicionX,
-        int posicionY,
+        Integer posicionX,
+        Integer posicionY,
         Long laneId,
         TipoActividad tipoActividad) {
 
-    public ActividadRequest(String nombre, String descripcion, int posicionX, int posicionY, Long laneId) {
+    public ActividadRequest(String nombre, String descripcion, Integer posicionX, Integer posicionY, Long laneId) {
         this(nombre, descripcion, posicionX, posicionY, laneId, null);
     }
 }

@@ -24,7 +24,7 @@ public class GatewayService {
     private final AuditoriaModeladoService auditoriaModeladoService;
 
     @Transactional
-    public Gateway crear(Long empresaId, Long laneId, String nombre, TipoGateway tipoGateway, int posX, int posY) {
+    public Gateway crear(Long empresaId, Long laneId, String nombre, TipoGateway tipoGateway, Integer posX, Integer posY) {
         Lane lane = laneService.obtener(empresaId, laneId);
         ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (lane.getPool().isCajaNegra()) {
@@ -40,8 +40,8 @@ public class GatewayService {
         gateway.setLane(lane);
         gateway.setNombre(nombre);
         gateway.setTipoGateway(tipoGateway);
-        gateway.setPosicionX(posX);
-        gateway.setPosicionY(posY);
+        gateway.setPosicionX(posX != null ? posX : 0);
+        gateway.setPosicionY(posY != null ? posY : 0);
         gateway = (Gateway) nodoFlujoService.guardar(gateway);
         auditoriaModeladoService.registrar(lane.getPool().getProceso(),
                 "Gateway creado: " + gateway.getNombre() + " (" + gateway.getTipoGateway() + ").");
@@ -49,7 +49,7 @@ public class GatewayService {
     }
 
     @Transactional
-    public Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, int posX, int posY) {
+    public Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, Integer posX, Integer posY) {
         Gateway gateway = obtener(empresaId, gatewayId);
         ReglasModelado.validarProcesoModelable(gateway.getLane().getPool().getProceso());
         Long procesoId = gateway.getLane().getPool().getProceso().getId();
@@ -77,8 +77,12 @@ public class GatewayService {
         }
         gateway.setNombre(nombre);
         gateway.setTipoGateway(tipoGateway);
-        gateway.setPosicionX(posX);
-        gateway.setPosicionY(posY);
+        if (posX != null) {
+            gateway.setPosicionX(posX);
+        }
+        if (posY != null) {
+            gateway.setPosicionY(posY);
+        }
         gateway = (Gateway) nodoFlujoService.guardar(gateway);
         auditoriaModeladoService.registrar(gateway.getLane().getPool().getProceso(),
                 "Gateway editado: " + gateway.getNombre() + ".");

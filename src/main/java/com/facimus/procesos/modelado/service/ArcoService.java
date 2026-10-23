@@ -73,12 +73,14 @@ public class ArcoService {
             destino = nodoFlujoService.obtener(empresaId, destinoId);
         }
 
-        validarConexion(empresaId, origen, destino, condicion, arcoId);
+        String etiquetaEfectiva = valorEditado(etiqueta, arco.getEtiqueta());
+        String condicionEfectiva = valorEditado(condicion, arco.getCondicion());
+        validarConexion(empresaId, origen, destino, condicionEfectiva, arcoId);
         arco.setOrigen(origen);
         arco.setDestino(destino);
         arco.setPool(origen.getLane().getPool());
-        arco.setEtiqueta(etiqueta);
-        arco.setCondicion(condicion);
+        arco.setEtiqueta(etiquetaEfectiva);
+        arco.setCondicion(condicionEfectiva);
         arco = arcoRepository.save(arco);
         auditoriaModeladoService.registrar(origen.getLane().getPool().getProceso(),
                 "Arco editado: " + origen.getNombre() + " -> " + destino.getNombre() + ".");
@@ -164,6 +166,14 @@ public class ArcoService {
                 && evento.getTipoEvento() == TipoEventoMensaje.CATCH_INICIO) {
             throw new ReglaNegocioException("Un Message Catch de inicio no puede tener arcos entrantes.");
         }
+    }
+
+    /** PUT parcial: null conserva el valor actual y un texto en blanco lo borra. */
+    private static String valorEditado(String nuevo, String actual) {
+        if (nuevo == null) {
+            return actual;
+        }
+        return StringUtils.hasText(nuevo) ? nuevo : null;
     }
 
     private boolean esMismoArco(Long arcoId, Long empresaId, Long origenId, Long destinoId) {

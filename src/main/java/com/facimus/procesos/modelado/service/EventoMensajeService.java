@@ -24,7 +24,7 @@ public class EventoMensajeService {
 
     @Transactional
     public EventoMensaje crear(Long empresaId, Long laneId, String nombre, TipoEventoMensaje tipoEvento,
-            String contenido, String claveCorrelacion, int posX, int posY, boolean origenExterno) {
+            String contenido, String claveCorrelacion, Integer posX, Integer posY, boolean origenExterno) {
         Lane lane = laneService.obtener(empresaId, laneId);
         ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (lane.getPool().isCajaNegra()) {
@@ -39,8 +39,8 @@ public class EventoMensajeService {
         evento.setTipoEvento(tipoEvento);
         evento.setContenido(contenido);
         evento.setClaveCorrelacion(claveCorrelacion);
-        evento.setPosicionX(posX);
-        evento.setPosicionY(posY);
+        evento.setPosicionX(posX != null ? posX : 0);
+        evento.setPosicionY(posY != null ? posY : 0);
         evento.setOrigenExterno(origenExterno);
         evento = (EventoMensaje) nodoFlujoService.guardar(evento);
         auditoriaModeladoService.registrar(lane.getPool().getProceso(),
@@ -50,7 +50,7 @@ public class EventoMensajeService {
 
     @Transactional
     public EventoMensaje editar(Long empresaId, Long eventoId, String nombre, TipoEventoMensaje tipoEvento,
-            String contenido, String claveCorrelacion, int posX, int posY, boolean origenExterno) {
+            String contenido, String claveCorrelacion, Integer posX, Integer posY, boolean origenExterno) {
         EventoMensaje evento = obtener(empresaId, eventoId);
         ReglasModelado.validarProcesoModelable(evento.getLane().getPool().getProceso());
         // Siempre, no solo al renombrar: cambiar el tipo puede romper el par Throw/Catch con el mismo nombre.
@@ -64,8 +64,12 @@ public class EventoMensajeService {
         evento.setTipoEvento(tipoEvento);
         evento.setContenido(contenido);
         evento.setClaveCorrelacion(claveCorrelacion);
-        evento.setPosicionX(posX);
-        evento.setPosicionY(posY);
+        if (posX != null) {
+            evento.setPosicionX(posX);
+        }
+        if (posY != null) {
+            evento.setPosicionY(posY);
+        }
         evento.setOrigenExterno(origenExterno);
         evento = (EventoMensaje) nodoFlujoService.guardar(evento);
         auditoriaModeladoService.registrar(evento.getLane().getPool().getProceso(),

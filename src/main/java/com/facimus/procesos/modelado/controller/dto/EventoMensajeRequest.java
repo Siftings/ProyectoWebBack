@@ -10,7 +10,7 @@ public record EventoMensajeRequest(
         @NotNull(message = "El tipo de evento es obligatorio.") TipoEventoMensaje tipoEvento,
         @NotBlank(message = "El contenido del mensaje es obligatorio.") String contenido,
         @NotBlank(message = "La clave de correlacion es obligatoria.") String claveCorrelacion,
-        int posicionX,
-        int posicionY,
+        Integer posicionX,
+        Integer posicionY,
         boolean origenExterno) {
 }

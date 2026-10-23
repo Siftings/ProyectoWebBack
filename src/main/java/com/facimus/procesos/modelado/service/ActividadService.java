@@ -25,12 +25,12 @@ public class ActividadService {
     private final AuditoriaModeladoService auditoriaModeladoService;
 
     @Transactional
-    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, int posX, int posY) {
+    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, Integer posX, Integer posY) {
         return crear(empresaId, laneId, nombre, descripcion, posX, posY, TipoActividad.TAREA);
     }
 
     @Transactional
-    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, int posX, int posY,
+    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, Integer posX, Integer posY,
             TipoActividad tipoActividad) {
         Lane lane = laneService.obtener(empresaId, laneId);
         ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
@@ -48,21 +48,21 @@ public class ActividadService {
         actividad.setNombre(nombre);
         actividad.setDescripcion(descripcion);
         actividad.setTipoActividad(tipoActividad != null ? tipoActividad : TipoActividad.TAREA);
-        actividad.setPosicionX(posX);
-        actividad.setPosicionY(posY);
+        actividad.setPosicionX(posX != null ? posX : 0);
+        actividad.setPosicionY(posY != null ? posY : 0);
         actividad = (Actividad) nodoFlujoService.guardar(actividad);
         auditoriaModeladoService.registrar(lane.getPool().getProceso(), "Actividad creada: " + actividad.getNombre() + ".");
         return actividad;
     }
 
     @Transactional
-    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, int posX, int posY,
+    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, Integer posX, Integer posY,
             Long laneId) {
         return editar(empresaId, actividadId, nombre, descripcion, posX, posY, laneId, null);
     }
 
     @Transactional
-    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, int posX, int posY,
+    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, Integer posX, Integer posY,
             Long laneId, TipoActividad tipoActividad) {
         Actividad actividad = obtener(empresaId, actividadId);
         ReglasModelado.validarProcesoModelable(actividad.getLane().getPool().getProceso());
@@ -98,8 +98,12 @@ public class ActividadService {
         if (tipoActividad != null) {
             actividad.setTipoActividad(tipoActividad);
         }
-        actividad.setPosicionX(posX);
-        actividad.setPosicionY(posY);
+        if (posX != null) {
+            actividad.setPosicionX(posX);
+        }
+        if (posY != null) {
+            actividad.setPosicionY(posY);
+        }
         actividad = (Actividad) nodoFlujoService.guardar(actividad);
         auditoriaModeladoService.registrar(actividad.getLane().getPool().getProceso(),
                 "Actividad editada: " + actividad.getNombre() + ".");

@@ -214,4 +214,58 @@ class EventoMensajeServiceTest {
                 eventoMensajeService.editar(1L, 5L, "Pedido", TipoEventoMensaje.THROW,
                         "payload", "pedidoId", 0, 0, false));
     }
+
+    @Test
+    void editar_sin_posicion_conserva() {
+        Proceso proceso = new Proceso();
+        proceso.setId(10L);
+        Pool pool = new Pool();
+        pool.setId(3L);
+        pool.setProceso(proceso);
+        Lane lane = new Lane();
+        lane.setPool(pool);
+
+        EventoMensaje evento = new EventoMensaje();
+        evento.setId(5L);
+        evento.setNombre("Pedido");
+        evento.setLane(lane);
+        evento.setActivo(true);
+        evento.setTipoEvento(TipoEventoMensaje.THROW);
+        evento.setPosicionX(120);
+        evento.setPosicionY(80);
+
+        when(nodoFlujoService.buscar(1L, 5L)).thenReturn(Optional.of(evento));
+        when(nodoFlujoService.nombreDisponibleParaEvento(any(), any(), any(), any(), any(), any())).thenReturn(true);
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EventoMensaje resultado = eventoMensajeService.editar(1L, 5L, "Pedido", TipoEventoMensaje.THROW,
+                "payload", "pedidoId", null, null, false);
+
+        assertEquals(120, resultado.getPosicionX());
+        assertEquals(80, resultado.getPosicionY());
+    }
+
+    @Test
+    void crear_sin_posicion_usa_cero() {
+        Empresa empresa = new Empresa();
+        empresa.setId(1L);
+        Proceso proceso = new Proceso();
+        proceso.setId(10L);
+        Pool pool = new Pool();
+        pool.setId(3L);
+        pool.setProceso(proceso);
+        Lane lane = new Lane();
+        lane.setEmpresa(empresa);
+        lane.setPool(pool);
+
+        when(laneService.obtener(1L, 2L)).thenReturn(lane);
+        when(nodoFlujoService.nombreDisponibleParaEvento(any(), any(), any(), any(), any(), any())).thenReturn(true);
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EventoMensaje resultado = eventoMensajeService.crear(1L, 2L, "Pedido", TipoEventoMensaje.THROW,
+                "payload", "pedidoId", null, null, false);
+
+        assertEquals(0, resultado.getPosicionX());
+        assertEquals(0, resultado.getPosicionY());
+    }
 }
