@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.modelado.model.Actividad;
 import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.model.TipoActividad;
@@ -34,7 +33,7 @@ public class ActividadService {
     public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, int posX, int posY,
             TipoActividad tipoActividad) {
         Lane lane = laneService.obtener(empresaId, laneId);
-        validarProcesoActivo(lane.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (lane.getPool().isCajaNegra()) {
             throw new ReglaNegocioException("Un pool de caja negra no puede contener actividades.");
         }
@@ -66,7 +65,7 @@ public class ActividadService {
     public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, int posX, int posY,
             Long laneId, TipoActividad tipoActividad) {
         Actividad actividad = obtener(empresaId, actividadId);
-        validarProcesoActivo(actividad.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(actividad.getLane().getPool().getProceso());
         if (laneId != null && !laneId.equals(actividad.getLane().getId())) {
             Lane nuevoLane = laneService.obtener(empresaId, laneId);
             if (nuevoLane.getPool().isCajaNegra()) {
@@ -141,7 +140,7 @@ public class ActividadService {
     @Transactional
     public void eliminar(Long empresaId, Long actividadId) {
         Actividad actividad = obtener(empresaId, actividadId);
-        validarProcesoActivo(actividad.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(actividad.getLane().getPool().getProceso());
         var proceso = actividad.getLane().getPool().getProceso();
         String nombre = actividad.getNombre();
         arcoService.desactivarPorNodo(empresaId, actividadId);
@@ -167,11 +166,5 @@ public class ActividadService {
                 .filter(Actividad.class::isInstance)
                 .map(Actividad.class::cast)
                 .toList();
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
-        }
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.util.StringUtils;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.modelado.model.Arco;
 import com.facimus.procesos.modelado.model.EventoMensaje;
 import com.facimus.procesos.modelado.model.Gateway;
@@ -37,7 +36,7 @@ public class ArcoService {
         }
         NodoFlujo origen = nodoFlujoService.obtener(empresaId, origenId);
         NodoFlujo destino = nodoFlujoService.obtener(empresaId, destinoId);
-        validarProcesoActivo(origen.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(origen.getLane().getPool().getProceso());
 
         validarConexion(empresaId, origen, destino, condicion, null);
 
@@ -58,7 +57,7 @@ public class ArcoService {
     public Arco editar(Long empresaId, Long arcoId, String etiqueta, String condicion,
             Long origenId, Long destinoId) {
         Arco arco = obtener(empresaId, arcoId);
-        validarProcesoActivo(arco.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(arco.getPool().getProceso());
         NodoFlujo origen = arco.getOrigen();
         NodoFlujo destino = arco.getDestino();
 
@@ -108,7 +107,7 @@ public class ArcoService {
     @Transactional
     public void eliminar(Long empresaId, Long arcoId) {
         Arco arco = obtener(empresaId, arcoId);
-        validarProcesoActivo(arco.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(arco.getPool().getProceso());
         var proceso = arco.getPool().getProceso();
         String descripcion = arco.getOrigen().getNombre() + " -> " + arco.getDestino().getNombre();
         arco.setActivo(false);
@@ -199,11 +198,5 @@ public class ArcoService {
     @Transactional
     public Arco guardar(Arco arco) {
         return arcoRepository.save(arco);
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
-        }
     }
 }

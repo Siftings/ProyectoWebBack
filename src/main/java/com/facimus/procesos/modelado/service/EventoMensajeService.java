@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.modelado.model.EventoMensaje;
 import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.model.TipoEventoMensaje;
@@ -27,7 +26,7 @@ public class EventoMensajeService {
     public EventoMensaje crear(Long empresaId, Long laneId, String nombre, TipoEventoMensaje tipoEvento,
             String contenido, String claveCorrelacion, int posX, int posY, boolean origenExterno) {
         Lane lane = laneService.obtener(empresaId, laneId);
-        validarProcesoActivo(lane.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (lane.getPool().isCajaNegra()) {
             throw new ReglaNegocioException("Un pool de caja negra no puede contener eventos internos.");
         }
@@ -53,7 +52,7 @@ public class EventoMensajeService {
     public EventoMensaje editar(Long empresaId, Long eventoId, String nombre, TipoEventoMensaje tipoEvento,
             String contenido, String claveCorrelacion, int posX, int posY, boolean origenExterno) {
         EventoMensaje evento = obtener(empresaId, eventoId);
-        validarProcesoActivo(evento.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(evento.getLane().getPool().getProceso());
         // Siempre, no solo al renombrar: cambiar el tipo puede romper el par Throw/Catch con el mismo nombre.
         validarNombre(empresaId, nombre, tipoEvento, evento.getLane(), eventoId);
         if (tipoEvento == TipoEventoMensaje.CATCH_INICIO
@@ -77,7 +76,7 @@ public class EventoMensajeService {
     @Transactional
     public void eliminar(Long empresaId, Long eventoId) {
         EventoMensaje evento = obtener(empresaId, eventoId);
-        validarProcesoActivo(evento.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(evento.getLane().getPool().getProceso());
         var proceso = evento.getLane().getPool().getProceso();
         String nombre = evento.getNombre();
         arcoService.desactivarPorNodo(empresaId, eventoId);
@@ -110,12 +109,6 @@ public class EventoMensajeService {
         if (!nodoFlujoService.nombreDisponibleParaEvento(nombre, lane.getPool().getProceso().getId(), empresaId,
                 tipoEvento, lane.getPool().getId(), eventoIdExcluir)) {
             throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
-        }
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
         }
     }
 }
