@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.facimus.procesos.common.PermisoDenegadoException;
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.gestion.model.Empresa;
 import com.facimus.procesos.gestion.model.PermisoEstructura;
@@ -34,7 +35,7 @@ public class PermisoEstructuraService {
             case ELIMINAR_LANE -> permiso.isEliminarLane();
         };
         if (!permitido) {
-            throw new ReglaNegocioException("El rol " + rol + " no tiene permiso para " + operacion.name().toLowerCase() + ".");
+            throw new PermisoDenegadoException("El rol " + rol + " no tiene permiso para " + operacion.name().toLowerCase() + ".");
         }
     }
 

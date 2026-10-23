@@ -12,6 +12,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static com.facimus.procesos.security.ApiPrincipalRequestPostProcessor.principal;
 import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.gestion.model.RolAcceso;
+import com.facimus.procesos.common.PermisoDenegadoException;
+import com.facimus.procesos.gestion.service.OperacionEstructura;
 import com.facimus.procesos.gestion.service.PermisoEstructuraService;
 import com.facimus.procesos.modelado.model.Pool;
 import com.facimus.procesos.modelado.model.TipoParticipante;
@@ -26,6 +28,7 @@ import com.facimus.procesos.config.ModelMapperConfig;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -98,6 +101,23 @@ class PoolControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "http://localhost/api/v1/pools/2"))
                 .andExpect(jsonPath("$.nombre").value("Proveedor"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/procesos/{procesoId}/pools - rol sin permiso de estructura (403)")
+    void crear_sin_permiso_de_estructura() throws Exception {
+        doThrow(new PermisoDenegadoException("El rol EDITOR no tiene permiso para crear_pool."))
+                .when(permisoEstructuraService).validar(1L, RolAcceso.EDITOR, OperacionEstructura.CREAR_POOL);
+
+        mockMvc.perform(post("/api/v1/procesos/10/pools")
+                        .with(principal(RolAcceso.EDITOR))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Proveedor","tipoParticipante":"PROVEEDOR","cajaNegra":false}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.title").value("Sin permisos"))
+                .andExpect(jsonPath("$.detail").value("El rol EDITOR no tiene permiso para crear_pool."));
     }
 
     @Test

@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.facimus.procesos.common.PermisoDenegadoException;
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.gestion.model.Empresa;
 import com.facimus.procesos.gestion.model.PermisoEstructura;
@@ -68,7 +69,7 @@ class PermisoEstructuraServiceTest {
         when(permisoEstructuraRepository.findByEmpresaIdAndRolAcceso(1L, RolAcceso.EDITOR))
                 .thenReturn(Optional.of(permiso));
 
-        assertThrows(ReglaNegocioException.class,
+        assertThrows(PermisoDenegadoException.class,
                 () -> service.validar(1L, RolAcceso.EDITOR, OperacionEstructura.CREAR_POOL));
     }
 

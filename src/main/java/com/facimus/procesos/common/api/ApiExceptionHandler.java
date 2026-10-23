@@ -1,5 +1,6 @@
 package com.facimus.procesos.common.api;
 
+import com.facimus.procesos.common.PermisoDenegadoException;
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler{
     @ExceptionHandler(ReglaNegocioException.class)
     public ProblemDetail manejarReglaNegocio(ReglaNegocioException ex, WebRequest req) {
         return construir(HttpStatus.CONFLICT, "Regla de negocio violada", ex.getMessage(), req);
+    }
+
+    @ExceptionHandler(PermisoDenegadoException.class)
+    public ProblemDetail manejarPermisoDenegado(PermisoDenegadoException ex, WebRequest req) {
+        return construir(HttpStatus.FORBIDDEN, "Sin permisos", ex.getMessage(), req);
     }
 
     // Defensa en profundidad: captura excepciones de autenticacion lanzadas dentro de controladores
