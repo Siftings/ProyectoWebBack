@@ -31,10 +31,7 @@ public class EventoMensajeService {
         if (lane.getPool().isCajaNegra()) {
             throw new ReglaNegocioException("Un pool de caja negra no puede contener eventos internos.");
         }
-        Long procesoId = lane.getPool().getProceso().getId();
-        if (nodoFlujoService.existeNombreEnProceso(nombre, procesoId, empresaId)) {
-            throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
-        }
+        validarNombre(empresaId, nombre, tipoEvento, lane, null);
 
         EventoMensaje evento = new EventoMensaje();
         evento.setEmpresa(lane.getEmpresa());
@@ -57,11 +54,8 @@ public class EventoMensajeService {
             String contenido, String claveCorrelacion, int posX, int posY, boolean origenExterno) {
         EventoMensaje evento = obtener(empresaId, eventoId);
         validarProcesoActivo(evento.getLane().getPool().getProceso());
-        Long procesoId = evento.getLane().getPool().getProceso().getId();
-        if (!evento.getNombre().equalsIgnoreCase(nombre)
-                && nodoFlujoService.existeNombreEnProceso(nombre, procesoId, empresaId)) {
-            throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
-        }
+        // Siempre, no solo al renombrar: cambiar el tipo puede romper el par Throw/Catch con el mismo nombre.
+        validarNombre(empresaId, nombre, tipoEvento, evento.getLane(), eventoId);
         if (tipoEvento == TipoEventoMensaje.CATCH_INICIO
                 && arcoService.listarPorDestino(empresaId, eventoId).stream()
                         .anyMatch(arco -> arco.isActivo())) {
@@ -109,6 +103,14 @@ public class EventoMensajeService {
                 .filter(EventoMensaje.class::isInstance)
                 .map(EventoMensaje.class::cast)
                 .toList();
+    }
+
+    private void validarNombre(Long empresaId, String nombre, TipoEventoMensaje tipoEvento, Lane lane,
+            Long eventoIdExcluir) {
+        if (!nodoFlujoService.nombreDisponibleParaEvento(nombre, lane.getPool().getProceso().getId(), empresaId,
+                tipoEvento, lane.getPool().getId(), eventoIdExcluir)) {
+            throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
+        }
     }
 
     private void validarProcesoActivo(Proceso proceso) {
