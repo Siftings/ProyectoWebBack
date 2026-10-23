@@ -92,7 +92,7 @@ public class PoolController {
             @Validated @RequestBody PoolRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
         permisoEstructuraService.validar(principal.empresaId(), principal.rol(), OperacionEstructura.CREAR_POOL);
         Pool pool = poolService.crear(principal.empresaId(), procesoId, request.nombre(),
-                request.tipoParticipante(), request.cajaNegra());
+                request.tipoParticipante(), Boolean.TRUE.equals(request.cajaNegra()));
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
                         .path("/api/v1/pools/{id}").buildAndExpand(pool.getId()).toUri())
                 .body(modelMapper.map(pool, PoolResponse.class));

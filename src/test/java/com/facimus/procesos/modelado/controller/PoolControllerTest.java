@@ -157,6 +157,21 @@ class PoolControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    @Test
+    @DisplayName("POST /api/v1/procesos/{procesoId}/pools - sin cajaNegra crea pool normal (201)")
+    void crear_sin_caja_negra() throws Exception {
+        Pool pool = crearPool(2L, "Proveedor");
+        given(poolService.crear(1L, 10L, "Proveedor", TipoParticipante.PROVEEDOR, false)).willReturn(pool);
+
+        mockMvc.perform(post("/api/v1/procesos/10/pools")
+                        .with(principal(RolAcceso.EDITOR))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Proveedor","tipoParticipante":"PROVEEDOR"}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
     private Pool crearPool(Long id, String nombre) {
         Proceso proceso = new Proceso();
         proceso.setId(10L);

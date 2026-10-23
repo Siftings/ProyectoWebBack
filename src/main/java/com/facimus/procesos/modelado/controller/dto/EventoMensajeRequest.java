@@ -12,5 +12,5 @@ public record EventoMensajeRequest(
         @NotBlank(message = "La clave de correlacion es obligatoria.") String claveCorrelacion,
         Integer posicionX,
         Integer posicionY,
-        boolean origenExterno) {
+        Boolean origenExterno) {
 }
