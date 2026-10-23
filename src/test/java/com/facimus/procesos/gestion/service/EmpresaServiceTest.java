@@ -1,5 +1,8 @@
 package com.facimus.procesos.gestion.service;
 
+import java.util.Optional;
+
+import com.facimus.procesos.common.RecursoNoEncontradoException;
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.gestion.model.Empresa;
 import com.facimus.procesos.gestion.repository.EmpresaRepository;
@@ -58,5 +61,23 @@ class EmpresaServiceTest {
 
         assertTrue(ex.getMessage().contains("NIT"));
         verify(empresaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("HU-23: obtenerPorNit devuelve la empresa con ese NIT exacto")
+    void obtener_por_nit_encontrada() {
+        Empresa empresa = new Empresa();
+        empresa.setId(2L);
+        when(empresaRepository.findByNit("900654321-2")).thenReturn(Optional.of(empresa));
+
+        assertSame(empresa, empresaService.obtenerPorNit(" 900654321-2 "));
+    }
+
+    @Test
+    @DisplayName("HU-23: obtenerPorNit con NIT inexistente lanza 404")
+    void obtener_por_nit_inexistente() {
+        when(empresaRepository.findByNit("000")).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class, () -> empresaService.obtenerPorNit("000"));
     }
 }
