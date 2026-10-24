@@ -26,6 +26,7 @@ public class CorrelacionOrquestadorService {
     @Transactional
     public Correlacion definir(Long empresaId, Long mensajeId, String criterio) {
         Mensaje mensaje = mensajeService.obtener(empresaId, mensajeId);
+        ReglasModelado.validarProcesoModelable(mensaje.getProceso());
         List<Mensaje> mensajesDelProceso = mensajeService.listarTodosPorProceso(empresaId,
                 mensaje.getProceso().getId());
         Correlacion correlacion = correlacionService.definir(mensaje, mensajesDelProceso, criterio);
@@ -37,6 +38,7 @@ public class CorrelacionOrquestadorService {
     @Transactional
     public void eliminar(Long empresaId, Long mensajeId) {
         Mensaje mensaje = mensajeService.obtener(empresaId, mensajeId);
+        ReglasModelado.validarProcesoModelable(mensaje.getProceso());
         correlacionService.eliminar(empresaId, mensaje);
         mensaje.setClaveCorrelacion(null);
         mensajeService.guardar(mensaje);

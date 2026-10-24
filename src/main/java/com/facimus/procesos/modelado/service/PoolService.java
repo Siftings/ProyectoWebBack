@@ -39,6 +39,7 @@ public class PoolService {
     public Pool crear(Long empresaId, Long procesoId, String nombre, TipoParticipante tipoParticipante,
             boolean cajaNegra) {
         Proceso proceso = procesoService.obtener(empresaId, procesoId);
+        ReglasModelado.validarProcesoModelable(proceso);
         int orden = poolRepository.findAllByProcesoIdAndEmpresaIdOrderByOrdenAsc(procesoId, empresaId).size();
 
         Pool pool = new Pool();
@@ -67,7 +68,7 @@ public class PoolService {
     public Pool editar(Long empresaId, Long poolId, String nombre, TipoParticipante tipoParticipante,
             boolean cajaNegra) {
         Pool pool = obtener(empresaId, poolId);
-        validarProcesoActivo(pool.getProceso());
+        ReglasModelado.validarProcesoModelable(pool.getProceso());
         if (cajaNegra) {
             eventPublisher.publishEvent(new PoolMarcadoCajaNegraEvent(empresaId, poolId));
         }
@@ -88,6 +89,7 @@ public class PoolService {
     @Transactional(readOnly = true)
     public Pool verificarEliminable(Long empresaId, Long poolId) {
         Pool pool = obtener(empresaId, poolId);
+        ReglasModelado.validarProcesoModelable(pool.getProceso());
         if (nodoFlujoService.tieneNodosActivosEnPool(empresaId, poolId)) {
             throw new ReglaNegocioException("El pool \"" + pool.getNombre()
                     + "\" tiene lanes con actividades o elementos activos; no se puede eliminar.");
@@ -97,7 +99,7 @@ public class PoolService {
 
     @Transactional
     public void eliminarRegistro(Pool pool) {
-        validarProcesoActivo(pool.getProceso());
+        ReglasModelado.validarProcesoModelable(pool.getProceso());
         var proceso = pool.getProceso();
         String nombre = pool.getNombre();
         poolRepository.delete(pool);
@@ -121,11 +123,5 @@ public class PoolService {
     @Transactional(readOnly = true)
     public boolean existe(Long empresaId, Long poolId) {
         return poolRepository.existsByIdAndEmpresaId(poolId, empresaId);
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
-        }
     }
 }

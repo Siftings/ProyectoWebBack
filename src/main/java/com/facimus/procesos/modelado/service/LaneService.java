@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
 import com.facimus.procesos.common.event.PoolMarcadoCajaNegraEvent;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.gestion.model.RolProceso;
 import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.model.Pool;
@@ -35,7 +34,7 @@ public class LaneService {
     @Transactional
     public Lane crear(Long empresaId, Long poolId, String nombre, RolProceso rolProceso) {
         Pool pool = poolService.obtener(empresaId, poolId);
-        validarProcesoActivo(pool.getProceso());
+        ReglasModelado.validarProcesoModelable(pool.getProceso());
         if (pool.isCajaNegra()) {
             throw new ReglaNegocioException("Un pool de caja negra no puede contener lanes.");
         }
@@ -55,7 +54,7 @@ public class LaneService {
     @Transactional
     public Lane editar(Long empresaId, Long laneId, String nombre, RolProceso rolProceso) {
         Lane lane = obtener(empresaId, laneId);
-        validarProcesoActivo(lane.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         lane.setNombre(nombre);
         lane.setRolProceso(rolProceso);
         lane = laneRepository.save(lane);
@@ -66,7 +65,7 @@ public class LaneService {
     @Transactional
     public void eliminar(Long empresaId, Long laneId) {
         Lane lane = obtener(empresaId, laneId);
-        validarProcesoActivo(lane.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (nodoFlujoService.tieneNodosActivos(empresaId, laneId)) {
             throw new ReglaNegocioException("La lane \"" + lane.getNombre()
                     + "\" contiene elementos activos; primero deben reasignarse.");
@@ -80,7 +79,7 @@ public class LaneService {
     @Transactional
     public List<Lane> reordenar(Long empresaId, Long poolId, List<Long> laneIds) {
         Pool pool = poolService.obtener(empresaId, poolId);
-        validarProcesoActivo(pool.getProceso());
+        ReglasModelado.validarProcesoModelable(pool.getProceso());
         List<Lane> lanes = laneRepository.findAllByPoolIdAndEmpresaIdOrderByOrdenAsc(poolId, empresaId);
         java.util.Set<Long> idsUnicos = new java.util.LinkedHashSet<>(laneIds);
         if (idsUnicos.size() != laneIds.size()) {
@@ -157,11 +156,5 @@ public class LaneService {
     @Transactional(readOnly = true)
     public boolean existe(Long empresaId, Long laneId) {
         return laneRepository.existsByIdAndEmpresaId(laneId, empresaId);
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
-        }
     }
 }

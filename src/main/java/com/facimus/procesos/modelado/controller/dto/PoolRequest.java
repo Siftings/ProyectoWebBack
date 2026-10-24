@@ -8,5 +8,5 @@ import jakarta.validation.constraints.NotNull;
 public record PoolRequest(
         @NotBlank(message = "El nombre es obligatorio.") String nombre,
         @NotNull(message = "El tipo de participante es obligatorio.") TipoParticipante tipoParticipante,
-        boolean cajaNegra) {
+        Boolean cajaNegra) {
 }

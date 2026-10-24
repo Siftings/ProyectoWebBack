@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.modelado.model.Actividad;
 import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.model.TipoActividad;
@@ -26,15 +25,15 @@ public class ActividadService {
     private final AuditoriaModeladoService auditoriaModeladoService;
 
     @Transactional
-    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, int posX, int posY) {
+    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, Integer posX, Integer posY) {
         return crear(empresaId, laneId, nombre, descripcion, posX, posY, TipoActividad.TAREA);
     }
 
     @Transactional
-    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, int posX, int posY,
+    public Actividad crear(Long empresaId, Long laneId, String nombre, String descripcion, Integer posX, Integer posY,
             TipoActividad tipoActividad) {
         Lane lane = laneService.obtener(empresaId, laneId);
-        validarProcesoActivo(lane.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (lane.getPool().isCajaNegra()) {
             throw new ReglaNegocioException("Un pool de caja negra no puede contener actividades.");
         }
@@ -49,24 +48,24 @@ public class ActividadService {
         actividad.setNombre(nombre);
         actividad.setDescripcion(descripcion);
         actividad.setTipoActividad(tipoActividad != null ? tipoActividad : TipoActividad.TAREA);
-        actividad.setPosicionX(posX);
-        actividad.setPosicionY(posY);
+        actividad.setPosicionX(posX != null ? posX : 0);
+        actividad.setPosicionY(posY != null ? posY : 0);
         actividad = (Actividad) nodoFlujoService.guardar(actividad);
         auditoriaModeladoService.registrar(lane.getPool().getProceso(), "Actividad creada: " + actividad.getNombre() + ".");
         return actividad;
     }
 
     @Transactional
-    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, int posX, int posY,
+    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, Integer posX, Integer posY,
             Long laneId) {
         return editar(empresaId, actividadId, nombre, descripcion, posX, posY, laneId, null);
     }
 
     @Transactional
-    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, int posX, int posY,
+    public Actividad editar(Long empresaId, Long actividadId, String nombre, String descripcion, Integer posX, Integer posY,
             Long laneId, TipoActividad tipoActividad) {
         Actividad actividad = obtener(empresaId, actividadId);
-        validarProcesoActivo(actividad.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(actividad.getLane().getPool().getProceso());
         if (laneId != null && !laneId.equals(actividad.getLane().getId())) {
             Lane nuevoLane = laneService.obtener(empresaId, laneId);
             if (nuevoLane.getPool().isCajaNegra()) {
@@ -99,8 +98,12 @@ public class ActividadService {
         if (tipoActividad != null) {
             actividad.setTipoActividad(tipoActividad);
         }
-        actividad.setPosicionX(posX);
-        actividad.setPosicionY(posY);
+        if (posX != null) {
+            actividad.setPosicionX(posX);
+        }
+        if (posY != null) {
+            actividad.setPosicionY(posY);
+        }
         actividad = (Actividad) nodoFlujoService.guardar(actividad);
         auditoriaModeladoService.registrar(actividad.getLane().getPool().getProceso(),
                 "Actividad editada: " + actividad.getNombre() + ".");
@@ -141,7 +144,7 @@ public class ActividadService {
     @Transactional
     public void eliminar(Long empresaId, Long actividadId) {
         Actividad actividad = obtener(empresaId, actividadId);
-        validarProcesoActivo(actividad.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(actividad.getLane().getPool().getProceso());
         var proceso = actividad.getLane().getPool().getProceso();
         String nombre = actividad.getNombre();
         arcoService.desactivarPorNodo(empresaId, actividadId);
@@ -167,11 +170,5 @@ public class ActividadService {
                 .filter(Actividad.class::isInstance)
                 .map(Actividad.class::cast)
                 .toList();
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
-        }
     }
 }

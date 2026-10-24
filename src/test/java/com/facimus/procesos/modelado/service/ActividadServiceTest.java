@@ -275,4 +275,18 @@ class ActividadServiceTest {
 
         assertTrue(ex.getMessage().contains("arcos conectados"));
     }
+
+    @Test
+    @DisplayName("Editar sin enviar posicion conserva la posicion actual")
+    void editar_sin_posicion_conserva() {
+        actividad.setPosicionX(120);
+        actividad.setPosicionY(80);
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(actividad));
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Actividad resultado = actividadService.editar(1L, 1L, "Tarea A", "Desc", null, null, null);
+
+        assertEquals(120, resultado.getPosicionX());
+        assertEquals(80, resultado.getPosicionY());
+    }
 }

@@ -10,7 +10,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.facimus.procesos.gestion.model.Empresa;
+import com.facimus.procesos.common.RecursoNoEncontradoException;
+import com.facimus.procesos.gestion.model.RolAcceso;
 import com.facimus.procesos.gestion.service.EmpresaOrquestadorService;
+import com.facimus.procesos.gestion.service.EmpresaService;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -20,6 +23,8 @@ import com.facimus.procesos.config.ModelMapperConfig;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static com.facimus.procesos.security.ApiPrincipalRequestPostProcessor.principal;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,6 +39,9 @@ class EmpresaControllerTest {
 
     @MockitoBean
     private EmpresaOrquestadorService empresaOrquestadorService;
+
+    @MockitoBean
+    private EmpresaService empresaService;
 
     @Test
     @DisplayName("POST /api/v1/empresas - registrar empresa exitoso (201)")
@@ -86,5 +94,73 @@ class EmpresaControllerTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/empresas - contrasena de 7 caracteres falla (400)")
+    void registrar_contrasena_corta_falla() throws Exception {
+        mockMvc.perform(post("/api/v1/empresas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nombreEmpresa": "Acme",
+                                  "nit": "900123",
+                                  "correoContacto": "info@acme.com",
+                                  "nombreAdmin": "Admin",
+                                  "emailAdmin": "admin@acme.com",
+                                  "passwordAdmin": "1234567"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("passwordAdmin: La contrasena debe tener al menos 8 caracteres."));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/empresas?nit= - admin obtiene id y nombre (200)")
+    void buscar_por_nit_admin() throws Exception {
+        Empresa empresa = new Empresa();
+        empresa.setId(2L);
+        empresa.setNombre("Empresa Beta S.A.S.");
+        empresa.setNit("900654321-2");
+        empresa.setCorreoContacto("contacto@beta.com");
+        given(empresaService.obtenerPorNit("900654321-2")).willReturn(empresa);
+
+        mockMvc.perform(get("/api/v1/empresas").param("nit", "900654321-2")
+                        .with(principal(RolAcceso.ADMINISTRADOR)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(2))
+                .andExpect(jsonPath("$.nombre").value("Empresa Beta S.A.S."))
+                .andExpect(jsonPath("$.nit").doesNotExist())
+                .andExpect(jsonPath("$.correoContacto").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/empresas?nit= - NIT inexistente (404)")
+    void buscar_por_nit_inexistente() throws Exception {
+        given(empresaService.obtenerPorNit("000")).willThrow(new RecursoNoEncontradoException("Empresa no encontrada."));
+
+        mockMvc.perform(get("/api/v1/empresas").param("nit", "000").with(principal(RolAcceso.ADMINISTRADOR)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/empresas sin nit (400)")
+    void buscar_sin_nit() throws Exception {
+        mockMvc.perform(get("/api/v1/empresas").with(principal(RolAcceso.ADMINISTRADOR)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/empresas?nit= - editor (403)")
+    void buscar_por_nit_editor() throws Exception {
+        mockMvc.perform(get("/api/v1/empresas").param("nit", "900654321-2").with(principal(RolAcceso.EDITOR)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/empresas?nit= - sin sesion (401)")
+    void buscar_por_nit_sin_sesion() throws Exception {
+        mockMvc.perform(get("/api/v1/empresas").param("nit", "900654321-2"))
+                .andExpect(status().isUnauthorized());
     }
 }

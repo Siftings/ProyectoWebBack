@@ -44,6 +44,13 @@ public class EmpresaService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Empresa no encontrada."));
     }
 
+    /** HU-23: la empresa propietaria ubica por NIT exacto a la empresa con la que compartira un proceso. */
+    @Transactional(readOnly = true)
+    public Empresa obtenerPorNit(String nit) {
+        return empresaRepository.findByNit(nit.trim())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Empresa no encontrada."));
+    }
+
     @Transactional(readOnly = true)
     public Optional<Empresa> buscarPorNit(String nit) {
         return empresaRepository.findByNit(nit);

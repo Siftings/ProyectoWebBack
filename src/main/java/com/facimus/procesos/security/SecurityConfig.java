@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/permisos-estructura/**").hasAuthority(ADMINISTRADOR)
                         .requestMatchers(HttpMethod.POST, "/api/v1/procesos/*/compartidos").hasAuthority(ADMINISTRADOR)
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/procesos/*/compartidos/**").hasAuthority(ADMINISTRADOR)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/empresas").hasAuthority(ADMINISTRADOR)
                         .requestMatchers(HttpMethod.GET, "/api/v1/**").authenticated()
                         .requestMatchers("/api/v1/roles/**").hasAuthority(ADMINISTRADOR)
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/procesos/**", "/api/v1/actividades/**",

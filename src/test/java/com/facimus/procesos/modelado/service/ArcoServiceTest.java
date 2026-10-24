@@ -408,4 +408,43 @@ class ArcoServiceTest {
         assertThrows(ReglaNegocioException.class,
                 () -> arcoService.editar(1L, 1L, "si", null, null, 10L));
     }
+
+    @Test
+    @DisplayName("Editar arco sin enviar etiqueta ni condicion conserva los valores actuales")
+    void editar_campos_omitidos_se_conservan() {
+        arco.setCondicion("monto > 100");
+        when(arcoRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(arco));
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Arco resultado = arcoService.editar(1L, 1L, null, null, null, null);
+
+        assertEquals("si", resultado.getEtiqueta());
+        assertEquals("monto > 100", resultado.getCondicion());
+    }
+
+    @Test
+    @DisplayName("Editar arco con texto en blanco borra la etiqueta y la condicion")
+    void editar_texto_en_blanco_limpia() {
+        arco.setCondicion("monto > 100");
+        when(arcoRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(arco));
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Arco resultado = arcoService.editar(1L, 1L, "", "  ", null, null);
+
+        assertNull(resultado.getEtiqueta());
+        assertNull(resultado.getCondicion());
+    }
+
+    @Test
+    @DisplayName("Editar arco desde gateway exclusivo sin enviar condicion conserva la existente")
+    void editar_gateway_exclusivo_conserva_condicion() {
+        arco.setOrigen(gatewayExclusivo);
+        arco.setCondicion("aprobado");
+        when(arcoRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(arco));
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Arco resultado = arcoService.editar(1L, 1L, "nueva", null, null, null);
+
+        assertEquals("aprobado", resultado.getCondicion());
+    }
 }

@@ -101,7 +101,7 @@ public class ArcoController {
     }
 
     @PutMapping("/arcos/{id}")
-    @Operation(summary = "Editar un arco", description = "Permite reasignar origen y destino, reaplicando las mismas validaciones que al crear.")
+    @Operation(summary = "Editar un arco", description = "Actualizacion parcial: un campo omitido (null) conserva su valor; etiqueta o condicion en blanco se borran. Reasignar origen/destino reaplica las validaciones de crear.")
     @ApiResponse(responseCode = "200", description = "Operacion exitosa.",
             content = @Content(schema = @Schema(implementation = ArcoResponse.class)))
     @ApiResponse(responseCode = "400", description = "Solicitud invalida (errores de validacion o JSON malformado).",

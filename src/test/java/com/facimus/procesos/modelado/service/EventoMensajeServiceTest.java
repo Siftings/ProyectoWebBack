@@ -53,8 +53,8 @@ class EventoMensajeServiceTest {
         lane.setPool(pool);
 
         when(laneService.obtener(1L, 2L)).thenReturn(lane);
-        when(nodoFlujoService.existeNombreEnProceso(
-                "Orden", 10L, 1L)).thenReturn(false);
+        when(nodoFlujoService.nombreDisponibleParaEvento(
+                "Orden", 10L, 1L, TipoEventoMensaje.THROW, 3L, null)).thenReturn(true);
         when(nodoFlujoService.guardar(any())).thenAnswer(inv -> {
             EventoMensaje e = inv.getArgument(0);
             e.setId(5L);
@@ -158,6 +158,7 @@ class EventoMensajeServiceTest {
         arcoInactivo.setActivo(false);
 
         when(nodoFlujoService.buscar(1L, 5L)).thenReturn(Optional.of(evento));
+        when(nodoFlujoService.nombreDisponibleParaEvento(any(), any(), any(), any(), any(), any())).thenReturn(true);
         when(arcoService.listarPorDestino(1L, 5L)).thenReturn(List.of(arcoInactivo));
         when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -166,5 +167,105 @@ class EventoMensajeServiceTest {
                 "payload", "pedidoId", 10, 20, false);
 
         assertEquals(TipoEventoMensaje.CATCH_INICIO, resultado.getTipoEvento());
+    }
+
+    @Test
+    void crear_con_nombre_no_disponible_falla() {
+        Proceso proceso = new Proceso();
+        proceso.setId(10L);
+        Pool pool = new Pool();
+        pool.setId(3L);
+        pool.setProceso(proceso);
+        Lane lane = new Lane();
+        lane.setPool(pool);
+
+        when(laneService.obtener(1L, 2L)).thenReturn(lane);
+        when(nodoFlujoService.nombreDisponibleParaEvento(
+                "Orden", 10L, 1L, TipoEventoMensaje.THROW, 3L, null)).thenReturn(false);
+
+        assertThrows(com.facimus.procesos.common.ReglaNegocioException.class, () ->
+                eventoMensajeService.crear(1L, 2L, "Orden", TipoEventoMensaje.THROW,
+                        "payload", "pedidoId", 0, 0, false));
+        verify(nodoFlujoService, never()).guardar(any());
+    }
+
+    @Test
+    void editar_valida_nombre_aunque_no_cambie() {
+        Proceso proceso = new Proceso();
+        proceso.setId(10L);
+        Pool pool = new Pool();
+        pool.setId(3L);
+        pool.setProceso(proceso);
+        Lane lane = new Lane();
+        lane.setPool(pool);
+
+        EventoMensaje evento = new EventoMensaje();
+        evento.setId(5L);
+        evento.setNombre("Pedido");
+        evento.setLane(lane);
+        evento.setActivo(true);
+        evento.setTipoEvento(TipoEventoMensaje.CATCH_INTERMEDIO);
+
+        when(nodoFlujoService.buscar(1L, 5L)).thenReturn(Optional.of(evento));
+        when(nodoFlujoService.nombreDisponibleParaEvento(
+                "Pedido", 10L, 1L, TipoEventoMensaje.THROW, 3L, 5L)).thenReturn(false);
+
+        assertThrows(com.facimus.procesos.common.ReglaNegocioException.class, () ->
+                eventoMensajeService.editar(1L, 5L, "Pedido", TipoEventoMensaje.THROW,
+                        "payload", "pedidoId", 0, 0, false));
+    }
+
+    @Test
+    void editar_sin_posicion_conserva() {
+        Proceso proceso = new Proceso();
+        proceso.setId(10L);
+        Pool pool = new Pool();
+        pool.setId(3L);
+        pool.setProceso(proceso);
+        Lane lane = new Lane();
+        lane.setPool(pool);
+
+        EventoMensaje evento = new EventoMensaje();
+        evento.setId(5L);
+        evento.setNombre("Pedido");
+        evento.setLane(lane);
+        evento.setActivo(true);
+        evento.setTipoEvento(TipoEventoMensaje.THROW);
+        evento.setPosicionX(120);
+        evento.setPosicionY(80);
+
+        when(nodoFlujoService.buscar(1L, 5L)).thenReturn(Optional.of(evento));
+        when(nodoFlujoService.nombreDisponibleParaEvento(any(), any(), any(), any(), any(), any())).thenReturn(true);
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EventoMensaje resultado = eventoMensajeService.editar(1L, 5L, "Pedido", TipoEventoMensaje.THROW,
+                "payload", "pedidoId", null, null, false);
+
+        assertEquals(120, resultado.getPosicionX());
+        assertEquals(80, resultado.getPosicionY());
+    }
+
+    @Test
+    void crear_sin_posicion_usa_cero() {
+        Empresa empresa = new Empresa();
+        empresa.setId(1L);
+        Proceso proceso = new Proceso();
+        proceso.setId(10L);
+        Pool pool = new Pool();
+        pool.setId(3L);
+        pool.setProceso(proceso);
+        Lane lane = new Lane();
+        lane.setEmpresa(empresa);
+        lane.setPool(pool);
+
+        when(laneService.obtener(1L, 2L)).thenReturn(lane);
+        when(nodoFlujoService.nombreDisponibleParaEvento(any(), any(), any(), any(), any(), any())).thenReturn(true);
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        EventoMensaje resultado = eventoMensajeService.crear(1L, 2L, "Pedido", TipoEventoMensaje.THROW,
+                "payload", "pedidoId", null, null, false);
+
+        assertEquals(0, resultado.getPosicionX());
+        assertEquals(0, resultado.getPosicionY());
     }
 }

@@ -253,4 +253,17 @@ class GatewayServiceTest {
         assertEquals(TipoGateway.EXCLUSIVO, resultado.getTipoGateway());
     }
 
+    @Test
+    @DisplayName("Editar sin enviar posicion conserva la posicion actual")
+    void editar_sin_posicion_conserva() {
+        gateway.setPosicionX(120);
+        gateway.setPosicionY(80);
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Gateway resultado = gatewayService.editar(1L, 1L, gateway.getNombre(), gateway.getTipoGateway(), null, null);
+
+        assertEquals(120, resultado.getPosicionX());
+        assertEquals(80, resultado.getPosicionY());
+    }
 }

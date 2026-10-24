@@ -95,6 +95,21 @@ class EventoMensajeControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void crear_sin_posicion_ni_origen_externo() throws Exception {
+        EventoMensaje e = evento(5L, "Orden", TipoEventoMensaje.THROW);
+        given(service.crear(1L, 2L, "Orden", TipoEventoMensaje.THROW, "payload", "pedidoId",
+                null, null, null)).willReturn(e);
+
+        mockMvc.perform(post("/api/v1/lanes/2/eventos-mensaje")
+                        .with(principal(RolAcceso.EDITOR))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Orden","tipoEvento":"THROW","contenido":"payload","claveCorrelacion":"pedidoId"}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
     private EventoMensaje evento(Long id, String nombre, TipoEventoMensaje tipo) {
         Lane lane = new Lane(); lane.setId(2L);
         EventoMensaje e = new EventoMensaje();

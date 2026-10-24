@@ -163,4 +163,16 @@ class UsuarioControllerTest {
         return u;
     }
 
+    @Test
+    @DisplayName("POST /api/v1/usuarios - contrasena de 7 caracteres falla (400)")
+    void crear_contrasena_corta_falla() throws Exception {
+        mockMvc.perform(post("/api/v1/usuarios")
+                        .with(principal(RolAcceso.ADMINISTRADOR))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Ana","email":"ana@demo.com","password":"1234567","rolAcceso":"EDITOR"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("password: La contrasena debe tener al menos 8 caracteres."));
+    }
 }

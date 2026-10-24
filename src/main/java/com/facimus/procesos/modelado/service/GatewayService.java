@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.modelado.model.Gateway;
 import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.model.TipoGateway;
@@ -25,9 +24,9 @@ public class GatewayService {
     private final AuditoriaModeladoService auditoriaModeladoService;
 
     @Transactional
-    public Gateway crear(Long empresaId, Long laneId, String nombre, TipoGateway tipoGateway, int posX, int posY) {
+    public Gateway crear(Long empresaId, Long laneId, String nombre, TipoGateway tipoGateway, Integer posX, Integer posY) {
         Lane lane = laneService.obtener(empresaId, laneId);
-        validarProcesoActivo(lane.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (lane.getPool().isCajaNegra()) {
             throw new ReglaNegocioException("Un pool de caja negra no puede contener gateways.");
         }
@@ -41,8 +40,8 @@ public class GatewayService {
         gateway.setLane(lane);
         gateway.setNombre(nombre);
         gateway.setTipoGateway(tipoGateway);
-        gateway.setPosicionX(posX);
-        gateway.setPosicionY(posY);
+        gateway.setPosicionX(posX != null ? posX : 0);
+        gateway.setPosicionY(posY != null ? posY : 0);
         gateway = (Gateway) nodoFlujoService.guardar(gateway);
         auditoriaModeladoService.registrar(lane.getPool().getProceso(),
                 "Gateway creado: " + gateway.getNombre() + " (" + gateway.getTipoGateway() + ").");
@@ -50,9 +49,9 @@ public class GatewayService {
     }
 
     @Transactional
-    public Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, int posX, int posY) {
+    public Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, Integer posX, Integer posY) {
         Gateway gateway = obtener(empresaId, gatewayId);
-        validarProcesoActivo(gateway.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(gateway.getLane().getPool().getProceso());
         Long procesoId = gateway.getLane().getPool().getProceso().getId();
         if (!gateway.getNombre().equalsIgnoreCase(nombre)
                 && nodoFlujoService.existeNombreEnProceso(nombre, procesoId, empresaId)) {
@@ -78,8 +77,12 @@ public class GatewayService {
         }
         gateway.setNombre(nombre);
         gateway.setTipoGateway(tipoGateway);
-        gateway.setPosicionX(posX);
-        gateway.setPosicionY(posY);
+        if (posX != null) {
+            gateway.setPosicionX(posX);
+        }
+        if (posY != null) {
+            gateway.setPosicionY(posY);
+        }
         gateway = (Gateway) nodoFlujoService.guardar(gateway);
         auditoriaModeladoService.registrar(gateway.getLane().getPool().getProceso(),
                 "Gateway editado: " + gateway.getNombre() + ".");
@@ -108,7 +111,7 @@ public class GatewayService {
     @Transactional
     public void eliminar(Long empresaId, Long gatewayId) {
         Gateway gateway = obtener(empresaId, gatewayId);
-        validarProcesoActivo(gateway.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(gateway.getLane().getPool().getProceso());
         var proceso = gateway.getLane().getPool().getProceso();
         String nombre = gateway.getNombre();
         arcoService.desactivarPorNodo(empresaId, gatewayId);
@@ -134,11 +137,5 @@ public class GatewayService {
                 .filter(Gateway.class::isInstance)
                 .map(Gateway.class::cast)
                 .toList();
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
-        }
     }
 }

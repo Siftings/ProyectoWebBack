@@ -154,6 +154,21 @@ class ActividadControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    @Test
+    @DisplayName("POST /api/v1/lanes/{laneId}/actividades - sin posicion (201)")
+    void crear_sin_posicion() throws Exception {
+        Actividad a = crearActividad(1L, "Revisar solicitud");
+        given(actividadService.crear(1L, 3L, "Revisar solicitud", null, null, null)).willReturn(a);
+
+        mockMvc.perform(post("/api/v1/lanes/3/actividades")
+                        .with(principal(RolAcceso.EDITOR))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"Revisar solicitud"}
+                                """))
+                .andExpect(status().isCreated());
+    }
+
     private Actividad crearActividad(Long id, String nombre) {
         Lane lane = new Lane();
         lane.setId(3L);

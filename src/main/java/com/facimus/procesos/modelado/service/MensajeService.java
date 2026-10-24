@@ -67,6 +67,7 @@ public class MensajeService {
         }
 
         Proceso proceso = procesoService.obtener(empresaId, procesoId);
+        ReglasModelado.validarProcesoModelable(proceso);
         Pool poolOrigen = poolService.obtener(empresaId, poolOrigenId);
         Pool poolDestino = poolService.obtener(empresaId, poolDestinoId);
 
@@ -136,7 +137,7 @@ public class MensajeService {
             String destinoExterno, PoliticaFalloNotificacion politicaFalloNotificacion,
             Long actividadErrorId, PoliticaMensajeSinCaso politicaSinCaso) {
         Mensaje mensaje = obtener(empresaId, mensajeId);
-        validarProcesoActivo(mensaje.getProceso());
+        ReglasModelado.validarProcesoModelable(mensaje.getProceso());
         Long catchEfectivoId = eventoCatchId != null
                 ? eventoCatchId
                 : (mensaje.getEventoCatch() != null ? mensaje.getEventoCatch().getId() : null);
@@ -200,7 +201,7 @@ public class MensajeService {
     @Transactional
     public void eliminar(Long empresaId, Long mensajeId) {
         Mensaje mensaje = obtener(empresaId, mensajeId);
-        validarProcesoActivo(mensaje.getProceso());
+        ReglasModelado.validarProcesoModelable(mensaje.getProceso());
         Proceso proceso = mensaje.getProceso();
         String nombre = mensaje.getNombre();
 
@@ -356,12 +357,6 @@ public class MensajeService {
                     "La actividad de error solo aplica a la politica DERIVAR_ACTIVIDAD_ERROR.");
         }
         return null;
-    }
-
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
-        }
     }
 
     private void validarAmbiguedad(Long empresaId, Long procesoId, String nombre,

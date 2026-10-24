@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.modelado.model.EventoMensaje;
 import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.model.TipoEventoMensaje;
@@ -25,16 +24,13 @@ public class EventoMensajeService {
 
     @Transactional
     public EventoMensaje crear(Long empresaId, Long laneId, String nombre, TipoEventoMensaje tipoEvento,
-            String contenido, String claveCorrelacion, int posX, int posY, boolean origenExterno) {
+            String contenido, String claveCorrelacion, Integer posX, Integer posY, Boolean origenExterno) {
         Lane lane = laneService.obtener(empresaId, laneId);
-        validarProcesoActivo(lane.getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(lane.getPool().getProceso());
         if (lane.getPool().isCajaNegra()) {
             throw new ReglaNegocioException("Un pool de caja negra no puede contener eventos internos.");
         }
-        Long procesoId = lane.getPool().getProceso().getId();
-        if (nodoFlujoService.existeNombreEnProceso(nombre, procesoId, empresaId)) {
-            throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
-        }
+        validarNombre(empresaId, nombre, tipoEvento, lane, null);
 
         EventoMensaje evento = new EventoMensaje();
         evento.setEmpresa(lane.getEmpresa());
@@ -43,9 +39,9 @@ public class EventoMensajeService {
         evento.setTipoEvento(tipoEvento);
         evento.setContenido(contenido);
         evento.setClaveCorrelacion(claveCorrelacion);
-        evento.setPosicionX(posX);
-        evento.setPosicionY(posY);
-        evento.setOrigenExterno(origenExterno);
+        evento.setPosicionX(posX != null ? posX : 0);
+        evento.setPosicionY(posY != null ? posY : 0);
+        evento.setOrigenExterno(Boolean.TRUE.equals(origenExterno));
         evento = (EventoMensaje) nodoFlujoService.guardar(evento);
         auditoriaModeladoService.registrar(lane.getPool().getProceso(),
                 "Evento de mensaje creado: " + evento.getNombre() + " (" + evento.getTipoEvento() + ").");
@@ -54,14 +50,11 @@ public class EventoMensajeService {
 
     @Transactional
     public EventoMensaje editar(Long empresaId, Long eventoId, String nombre, TipoEventoMensaje tipoEvento,
-            String contenido, String claveCorrelacion, int posX, int posY, boolean origenExterno) {
+            String contenido, String claveCorrelacion, Integer posX, Integer posY, Boolean origenExterno) {
         EventoMensaje evento = obtener(empresaId, eventoId);
-        validarProcesoActivo(evento.getLane().getPool().getProceso());
-        Long procesoId = evento.getLane().getPool().getProceso().getId();
-        if (!evento.getNombre().equalsIgnoreCase(nombre)
-                && nodoFlujoService.existeNombreEnProceso(nombre, procesoId, empresaId)) {
-            throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
-        }
+        ReglasModelado.validarProcesoModelable(evento.getLane().getPool().getProceso());
+        // Siempre, no solo al renombrar: cambiar el tipo puede romper el par Throw/Catch con el mismo nombre.
+        validarNombre(empresaId, nombre, tipoEvento, evento.getLane(), eventoId);
         if (tipoEvento == TipoEventoMensaje.CATCH_INICIO
                 && arcoService.listarPorDestino(empresaId, eventoId).stream()
                         .anyMatch(arco -> arco.isActivo())) {
@@ -71,9 +64,15 @@ public class EventoMensajeService {
         evento.setTipoEvento(tipoEvento);
         evento.setContenido(contenido);
         evento.setClaveCorrelacion(claveCorrelacion);
-        evento.setPosicionX(posX);
-        evento.setPosicionY(posY);
-        evento.setOrigenExterno(origenExterno);
+        if (posX != null) {
+            evento.setPosicionX(posX);
+        }
+        if (posY != null) {
+            evento.setPosicionY(posY);
+        }
+        if (origenExterno != null) {
+            evento.setOrigenExterno(origenExterno);
+        }
         evento = (EventoMensaje) nodoFlujoService.guardar(evento);
         auditoriaModeladoService.registrar(evento.getLane().getPool().getProceso(),
                 "Evento de mensaje editado: " + evento.getNombre() + ".");
@@ -83,7 +82,7 @@ public class EventoMensajeService {
     @Transactional
     public void eliminar(Long empresaId, Long eventoId) {
         EventoMensaje evento = obtener(empresaId, eventoId);
-        validarProcesoActivo(evento.getLane().getPool().getProceso());
+        ReglasModelado.validarProcesoModelable(evento.getLane().getPool().getProceso());
         var proceso = evento.getLane().getPool().getProceso();
         String nombre = evento.getNombre();
         arcoService.desactivarPorNodo(empresaId, eventoId);
@@ -111,9 +110,11 @@ public class EventoMensajeService {
                 .toList();
     }
 
-    private void validarProcesoActivo(Proceso proceso) {
-        if (!proceso.isActivo()) {
-            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
+    private void validarNombre(Long empresaId, String nombre, TipoEventoMensaje tipoEvento, Lane lane,
+            Long eventoIdExcluir) {
+        if (!nodoFlujoService.nombreDisponibleParaEvento(nombre, lane.getPool().getProceso().getId(), empresaId,
+                tipoEvento, lane.getPool().getId(), eventoIdExcluir)) {
+            throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
         }
     }
 }
