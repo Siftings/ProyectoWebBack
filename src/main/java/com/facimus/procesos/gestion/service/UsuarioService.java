@@ -91,6 +91,11 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Optional<Usuario> buscarActivoPorEmail(String email) {
+        return usuarioRepository.findByEmailIgnoreCase(email).filter(Usuario::isActivo);
+    }
+
+    @Transactional(readOnly = true)
     public boolean existePorEmail(String email) {
         return usuarioRepository.existsByEmailIgnoreCase(email);
     }

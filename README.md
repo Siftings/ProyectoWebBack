@@ -38,6 +38,11 @@ La aplicacion inicia en `http://localhost:8080`. Se crea automaticamente una emp
 | `DB_NAME`               | Nombre de la base (perfil prod)       | `procesos`                 |
 | `DB_USER`               | Usuario de la base (perfil prod)      | —                          |
 | `DB_PASSWORD`           | Contrasena de la base (perfil prod)   | —                          |
+| `JWT_HABILITADO`        | `false` desactiva el JWT (ver nota)   | `true`                     |
+| `USUARIO_FIJO`          | Usuario fijo si el JWT esta apagado   | `admin@demo.com`           |
+
+> **`JWT_HABILITADO=false` es solo para desarrollo:** toda peticion se autentica como `USUARIO_FIJO`, sin token.
+> En el perfil `prod` la propiedad esta fija en `true` y la variable se ignora.
 
 ## Endpoints principales
 

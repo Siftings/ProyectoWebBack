@@ -1,5 +1,8 @@
 package com.facimus.procesos.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.facimus.procesos.gestion.model.RolAcceso;
 import com.facimus.procesos.gestion.service.UsuarioService;
@@ -17,6 +21,8 @@ import com.facimus.procesos.gestion.service.UsuarioService;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     private static final String ADMINISTRADOR = RolAcceso.ADMINISTRADOR.name();
     private static final String EDITOR = RolAcceso.EDITOR.name();
@@ -30,14 +36,22 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtService jwtService, UsuarioService usuarioService)
-            throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtService jwtService, UsuarioService usuarioService,
+            @Value("${seguridad.jwt.habilitado:true}") boolean jwtHabilitado,
+            @Value("${seguridad.usuario-fijo.email:admin@demo.com}") String emailUsuarioFijo) throws Exception {
+        OncePerRequestFilter filtroAutenticacion;
+        if (jwtHabilitado) {
+            filtroAutenticacion = new JwtAuthenticationFilter(jwtService, usuarioService);
+        } else {
+            log.warn("JWT deshabilitado: todas las peticiones se autentican como {}. Solo para desarrollo.",
+                    emailUsuarioFijo);
+            filtroAutenticacion = new UsuarioFijoFilter(emailUsuarioFijo, usuarioService);
+        }
         reglasComunes(http)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))
-                .addFilterBefore(new JwtAuthenticationFilter(jwtService, usuarioService),
-                        UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(filtroAutenticacion, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

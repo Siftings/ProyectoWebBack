@@ -145,4 +145,21 @@ class UsuarioServiceTest {
         assertThrows(RecursoNoEncontradoException.class,
                 () -> usuarioService.obtener(1L, 99L));
     }
+
+    @Test
+    @DisplayName("Buscar activo por email devuelve el usuario si esta activo")
+    void buscarActivoPorEmail_activo() {
+        when(usuarioRepository.findByEmailIgnoreCase("juan@acme.com")).thenReturn(Optional.of(usuario));
+
+        assertEquals(Optional.of(usuario), usuarioService.buscarActivoPorEmail("juan@acme.com"));
+    }
+
+    @Test
+    @DisplayName("Buscar activo por email ignora usuarios inactivos")
+    void buscarActivoPorEmail_inactivo() {
+        usuario.setActivo(false);
+        when(usuarioRepository.findByEmailIgnoreCase("juan@acme.com")).thenReturn(Optional.of(usuario));
+
+        assertTrue(usuarioService.buscarActivoPorEmail("juan@acme.com").isEmpty());
+    }
 }
